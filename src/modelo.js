@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { randomUUID } from 'expo-crypto';
+import { randomUUID } from './uuid';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { sha256 } from '@noble/hashes/sha256';
 import {

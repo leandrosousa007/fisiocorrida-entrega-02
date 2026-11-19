@@ -1,4 +1,4 @@
-import { randomUUID } from 'expo-crypto';
+import { randomUUID } from './uuid';
 
 function localDate() {
   const d = new Date();

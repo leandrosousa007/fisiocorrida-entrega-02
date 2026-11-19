@@ -3,7 +3,8 @@
     "build": "expo export --platform android",
     "start": "expo start",
     "android": "expo start --android",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:web": "expo export --platform web"
   },
   "name": "fisiocorrida",
   "private": true,
