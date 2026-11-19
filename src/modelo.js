@@ -71,7 +71,10 @@ class Clinica {
   async registrarRelato(lado, dor, impacto, objetivo, modalidade, obs) {
     const p = this.acesso(this.usuario.id);
     exigir(
-      escala(dor) && impacto.trim() && objetivo.trim() && lado,
+      escala(dor) &&
+        impacto.trim() &&
+        objetivo.trim() &&
+        ['Esquerdo', 'Direito', 'Ambos'].includes(lado),
       'Preencha o relato e informe dor entre 0 e 10.',
     );
     Object.assign(p, { objetivo, modalidade });
@@ -114,6 +117,7 @@ class Clinica {
     exigir(
       p.profissional === this.usuario.id &&
         itens.length &&
+        new Set(itens.map((item) => item.exercicio)).size === itens.length &&
         itens.every(
           (i) =>
             this.d.exercicios.some(
@@ -149,7 +153,7 @@ class Clinica {
     );
     exigir(
       !this.d.sessoes.some((s) => s.plano === p.id && s.data === data),
-      'Já existe uma sessão desse plano nessa data.',
+      'Já existe uma sessão desse plano nessa data. Confira o registro na aba Histórico.',
     );
     this.d.sessoes.push(new Sessao(p.id, data, antes, depois, realizados, comentario));
     await this.salvar();

@@ -107,10 +107,10 @@ export default function App() {
     if (next === 'Sessão') initial = { data: hoje(), antes: '0', depois: '0' };
     if (next === 'Prescrever' && id) {
       const current = clinic.vigente(id);
+      initial.ordem = current?.itens.map((item) => item.exercicio) || [];
       if (current) {
         initial.orient = current.orientacao;
         for (const item of current.itens) {
-          initial[item.exercicio] = true;
           initial['dose' + item.exercicio] = item.dose;
           initial['freq' + item.exercicio] = item.frequencia;
         }
@@ -261,6 +261,9 @@ export default function App() {
               {[
                 ['Lucas · paciente', 'lucas'],
                 ['Rafaela · fisioterapeuta', 'rafaela'],
+                ['Ana · paciente', 'ana'],
+                ['Marina · paciente', 'marina.demo'],
+                ['Bruno · fisioterapeuta', 'bruno'],
               ].map(([title, name]) => (
                 <Button
                   key={name}
@@ -406,36 +409,70 @@ export default function App() {
           })}
         </>
       );
-    if (page === 'Prescrever')
+    if (page === 'Prescrever') {
+      const order = values.ordem || [];
+      function move(index, offset) {
+        const next = [...order];
+        [next[index], next[index + offset]] = [next[index + offset], next[index]];
+        set('ordem', next);
+      }
       return (
         <>
           {plan && planCard(plan)}
           <Card title={plan ? 'Revisar plano' : 'Criar plano'}>
             {!catalog.length && <Body>Cadastre um exercício antes de publicar o plano.</Body>}
-            {catalog.map((item) => (
-              <View style={styles.tile} key={item.id}>
+            {catalog
+              .filter((item) => !order.includes(item.id))
+              .map((item) => (
                 <Choice
+                  key={item.id}
                   title={item.nome}
-                  selected={!!values[item.id]}
-                  onPress={() => set(item.id, !values[item.id])}
+                  selected={false}
+                  onPress={() => set('ordem', [...order, item.id])}
                 />
-                {values[item.id] && (
-                  <>
-                    {input('dose' + item.id, 'Séries e repetições ou duração')}
-                    {input('freq' + item.id, 'Frequência')}
-                  </>
-                )}
+              ))}
+            {order.map((id, index) => (
+              <View style={styles.tile} key={id}>
+                <Text style={styles.label}>
+                  {index + 1}. {exercise(id).nome}
+                </Text>
+                {input('dose' + id, 'Séries e repetições ou duração')}
+                {input('freq' + id, 'Frequência')}
+                <View style={styles.row}>
+                  <Button
+                    active={false}
+                    compact
+                    title="Subir"
+                    disabled={index === 0}
+                    onPress={() => move(index, -1)}
+                  />
+                  <Button
+                    active={false}
+                    compact
+                    title="Descer"
+                    disabled={index === order.length - 1}
+                    onPress={() => move(index, 1)}
+                  />
+                  <Button
+                    active={false}
+                    compact
+                    title="Remover"
+                    onPress={() =>
+                      set(
+                        'ordem',
+                        order.filter((item) => item !== id),
+                      )
+                    }
+                  />
+                </View>
               </View>
             ))}
             {input('orient', 'Orientações gerais', { multiline: true })}
             {plan && input('motivo', 'Motivo da revisão')}
             {action('Publicar versão', async () => {
-              const items = catalog
-                .filter((item) => values[item.id])
-                .map(
-                  (item) =>
-                    new ItemPlano(item.id, val('dose' + item.id), val('freq' + item.id)),
-                );
+              const items = order.map(
+                (id) => new ItemPlano(id, val('dose' + id), val('freq' + id)),
+              );
               await clinic.publicar(patient, items, val('orient'), val('motivo'));
               go('Versões');
               ok('Versão publicada.');
@@ -443,10 +480,35 @@ export default function App() {
           </Card>
         </>
       );
+    }
     if (page === 'Versões') {
       const versions = clinic.versoes(patient);
       return versions.length ? (
-        versions.map(planCard)
+        <>
+          <Card title="Linha do tempo">
+            {versions.length === 1 && <Body>Apenas a versão inicial está disponível.</Body>}
+            {versions.map((version, index) => (
+              <View key={version.id} style={styles.tile}>
+                <Text style={styles.label}>
+                  Versão {version.versao}
+                  {index === 0 ? ' · Vigente' : ''}
+                </Text>
+                <Body>
+                  {formatarData(version.data)} ·{' '}
+                  {users.find((account) => account.id === version.autor)?.nome}
+                </Body>
+                {version.motivo && <Body>{version.motivo}</Body>}
+                <Button
+                  compact
+                  active={values.versao === version.id}
+                  title={'Abrir versão ' + version.versao}
+                  onPress={() => set('versao', version.id)}
+                />
+              </View>
+            ))}
+          </Card>
+          {versions.filter((version) => version.id === values.versao).map(planCard)}
+        </>
       ) : (
         <Card>
           <Body>Nenhum plano publicado.</Body>
@@ -534,6 +596,7 @@ export default function App() {
       return (
         <Card>
           <Body>Aguardando o primeiro plano.</Body>
+          <Body>Entre em contato com seu fisioterapeuta para combinar o plano.</Body>
         </Card>
       );
     if (page === 'Plano')
