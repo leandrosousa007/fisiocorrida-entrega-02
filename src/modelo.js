@@ -25,6 +25,12 @@ async function digest(senha, sal) {
   });
   return Array.from(result).join('.');
 }
+
+export async function gerarCredenciais(senha) {
+  const sal = randomUUID();
+  return { sal, hash: await digest(senha, sal) };
+}
+
 class Clinica {
   constructor(d) {
     this.d = d || { usuarios: [], relatos: [], exercicios: [], planos: [], sessoes: [] };
@@ -49,9 +55,9 @@ class Clinica {
         : papel === 'Fisioterapeuta' && vinculo.trim(),
       'Informe o profissional ou o registro.',
     );
-    const sal = randomUUID(),
-      Tipo = paciente ? Paciente : Fisioterapeuta,
-      u = new Tipo(nome, email, papel, await digest(senha, sal), sal);
+    const { hash, sal } = await gerarCredenciais(senha);
+    const Tipo = paciente ? Paciente : Fisioterapeuta;
+    const u = new Tipo(nome, email, papel, hash, sal);
     u[paciente ? 'profissional' : 'registro'] = vinculo;
     this.d.usuarios.push(u);
     await this.salvar();

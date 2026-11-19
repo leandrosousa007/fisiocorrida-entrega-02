@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { ExerciseRow, SessionList, formatarData } from './src/cartoes';
-import { loadClinic } from './src/demonstracao';
+import { CONTAS_DEMO, SENHA_DEMO, loadClinic } from './src/demonstracao';
 import { ItemPlano, hoje } from './src/modelo';
 import { PATIENT, PROFESSIONAL } from './src/perfis';
 import {
@@ -258,20 +258,16 @@ export default function App() {
           <Card title="Contas de demonstração">
             <Body>Escolha um perfil para preencher os campos e depois toque em Entrar.</Body>
             <View style={styles.row}>
-              {[
-                ['Lucas · paciente', 'lucas'],
-                ['Rafaela · fisioterapeuta', 'rafaela'],
-                ['Ana · paciente', 'ana'],
-                ['Marina · paciente', 'marina.demo'],
-                ['Bruno · fisioterapeuta', 'bruno'],
-              ].map(([title, name]) => (
+              {CONTAS_DEMO.filter((conta) =>
+                users.some((usuario) => usuario.demo === conta.login),
+              ).map(({ login, nome, perfil, email }) => (
                 <Button
-                  key={name}
+                  key={login}
                   compact
                   active={false}
-                  title={title}
+                  title={nome + ' · ' + perfil.toLowerCase()}
                   onPress={() => {
-                    setValues({ email: name + '@example.test', senha: 'demo123' });
+                    setValues({ email, senha: SENHA_DEMO });
                     setShowPassword(false);
                     setMessage(null);
                     top();

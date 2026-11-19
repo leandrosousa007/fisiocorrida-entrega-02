@@ -1,9 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Clinica, ItemPlano } from './modelo';
+import { Clinica, ItemPlano, gerarCredenciais } from './modelo';
 import { PATIENT, PROFESSIONAL } from './perfis';
 
 const STORAGE_KEY = 'fc2.v1';
-const SENHA_DEMO = 'demo123';
+export const SENHA_DEMO = 'senha123';
+export const CONTAS_DEMO = [
+  { login: 'lucas', nome: 'Lucas', perfil: PATIENT, email: 'lucas@gmail.com' },
+  { login: 'rafaela', nome: 'Rafaela', perfil: PROFESSIONAL, email: 'fisioterapeuta@gmail.com' },
+  { login: 'ana', nome: 'Ana', perfil: PATIENT, email: 'ana@gmail.com' },
+  { login: 'marina.demo', nome: 'Marina', perfil: PATIENT, email: 'marina@gmail.com' },
+  { login: 'bruno', nome: 'Bruno', perfil: PROFESSIONAL, email: 'bruno@gmail.com' },
+];
 
 const catalogo = {
   rafaela: [
@@ -82,10 +89,30 @@ function haDias(dias) {
   ].join('-');
 }
 
-async function obterConta(clinica, nome, login, perfil, vinculo) {
-  const email = login + '@example.test';
-  const conta = clinica.d.usuarios.find((usuario) => usuario.email === email);
-  return conta || clinica.cadastrar(nome, email, SENHA_DEMO, perfil, vinculo);
+async function obterConta(clinica, login, vinculo) {
+  const { nome, perfil, email } = CONTAS_DEMO.find((conta) => conta.login === login);
+  const atual = clinica.d.usuarios.find((usuario) => usuario.email === email);
+  if (atual) return atual.demo === login ? atual : null;
+
+  // Migrar a conta de exemplo mantendo o ID usado pelos planos, relatos e sessões.
+  const antigo = clinica.d.usuarios.find(
+    (usuario) => usuario.email === login + '@example.test' && usuario.papel === perfil,
+  );
+  if (antigo) {
+    try {
+      await clinica.autenticar(antigo.email, 'demo123');
+    } catch {
+      return null;
+    }
+    Object.assign(antigo, await gerarCredenciais(SENHA_DEMO), { email, demo: login });
+    await clinica.salvar();
+    return antigo;
+  }
+
+  const nova = await clinica.cadastrar(nome, email, SENHA_DEMO, perfil, vinculo);
+  nova.demo = login;
+  await clinica.salvar();
+  return nova;
 }
 
 async function montarHistorico(clinica, paciente, profissional, exemplo) {
@@ -138,14 +165,15 @@ async function montarHistorico(clinica, paciente, profissional, exemplo) {
 export async function loadClinic() {
   const saved = await AsyncStorage.getItem(STORAGE_KEY);
   const clinica = new Clinica(saved ? JSON.parse(saved) : undefined);
-  if (clinica.d.demonstracaoVersao === 2) return clinica;
+  if (clinica.d.demonstracaoVersao === 3) return clinica;
 
   const profissionais = {
-    rafaela: await obterConta(clinica, 'Rafaela', 'rafaela', PROFESSIONAL, 'FICTÍCIO-01'),
-    bruno: await obterConta(clinica, 'Bruno', 'bruno', PROFESSIONAL, 'FICTÍCIO-02'),
+    rafaela: await obterConta(clinica, 'rafaela', 'FICTÍCIO-01'),
+    bruno: await obterConta(clinica, 'bruno', 'FICTÍCIO-02'),
   };
 
   for (const [login, profissional] of Object.entries(profissionais)) {
+    if (!profissional) continue;
     clinica.usuario = profissional;
     for (const [nome, instrucao] of catalogo[login]) {
       const jaExiste = clinica.d.exercicios.some(
@@ -158,19 +186,14 @@ export async function loadClinic() {
 
   for (const exemplo of pacientes) {
     const profissional = profissionais[exemplo.profissional];
-    const paciente = await obterConta(
-      clinica,
-      exemplo.nome,
-      exemplo.login,
-      PATIENT,
-      profissional.id,
-    );
-    if (paciente.profissional === profissional.id) {
+    if (!profissional) continue;
+    const paciente = await obterConta(clinica, exemplo.login, profissional.id);
+    if (paciente?.profissional === profissional.id) {
       await montarHistorico(clinica, paciente, profissional, exemplo);
     }
   }
   clinica.usuario = null;
-  clinica.d.demonstracaoVersao = 2;
+  clinica.d.demonstracaoVersao = 3;
   await clinica.salvar();
   return clinica;
 }
