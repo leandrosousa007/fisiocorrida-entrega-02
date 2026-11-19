@@ -1,0 +1,42 @@
+name: Gerar APK de demonstração
+on:
+  push:
+    tags: ['demo-apk-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - run: npx expo prebuild --platform android --no-install
+      - name: Compilar APK com o JavaScript incorporado
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --max-workers=2
+        env:
+          NODE_ENV: production
+      - name: Verificar e publicar APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk FisioCorrida.apk
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$build_tools/apksigner" verify FisioCorrida.apk
+          unzip -Z1 FisioCorrida.apk | grep -Fx assets/index.android.bundle
+          sha256sum FisioCorrida.apk > FisioCorrida.apk.sha256
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$GITHUB_REF_TYPE" != tag ]]; then tag="demo-apk-${GITHUB_RUN_ID}"; fi
+          gh release create "$tag" FisioCorrida.apk FisioCorrida.apk.sha256 --target "$GITHUB_SHA" --title "FisioCorrida para Android" --notes "APK acadêmico para instalação direta. Inclui os perfis de demonstração e funciona offline. Assinado com a chave de demonstração do projeto Expo."
