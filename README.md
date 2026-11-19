@@ -17,7 +17,7 @@ Na tela de login, escolha um dos três pacientes ou um dos dois fisioterapeutas 
 
 | Perfil | E-mail de demonstração |
 | --- | --- |
-| Rafaela (fisioterapeuta) | `fisioterapeuta@gmail.com` |
+| Rafaela (fisioterapeuta) | `rafaela@gmail.com` |
 | Bruno (fisioterapeuta) | `bruno@gmail.com` |
 | Lucas (paciente) | `lucas@gmail.com` |
 | Ana (paciente) | `ana@gmail.com` |

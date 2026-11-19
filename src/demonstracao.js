@@ -6,7 +6,7 @@ const STORAGE_KEY = 'fc2.v1';
 export const SENHA_DEMO = 'senha123';
 export const CONTAS_DEMO = [
   { login: 'lucas', nome: 'Lucas', perfil: PATIENT, email: 'lucas@gmail.com' },
-  { login: 'rafaela', nome: 'Rafaela', perfil: PROFESSIONAL, email: 'fisioterapeuta@gmail.com' },
+  { login: 'rafaela', nome: 'Rafaela', perfil: PROFESSIONAL, email: 'rafaela@gmail.com' },
   { login: 'ana', nome: 'Ana', perfil: PATIENT, email: 'ana@gmail.com' },
   { login: 'marina.demo', nome: 'Marina', perfil: PATIENT, email: 'marina@gmail.com' },
   { login: 'bruno', nome: 'Bruno', perfil: PROFESSIONAL, email: 'bruno@gmail.com' },
@@ -94,6 +94,15 @@ async function obterConta(clinica, login, vinculo) {
   const atual = clinica.d.usuarios.find((usuario) => usuario.email === email);
   if (atual) return atual.demo === login ? atual : null;
 
+  const contaDemoExistente = clinica.d.usuarios.find(
+    (usuario) => usuario.demo === login && usuario.papel === perfil,
+  );
+  if (contaDemoExistente) {
+    contaDemoExistente.email = email;
+    await clinica.salvar();
+    return contaDemoExistente;
+  }
+
   // Migrar a conta de exemplo mantendo o ID usado pelos planos, relatos e sessões.
   const antigo = clinica.d.usuarios.find(
     (usuario) => usuario.email === login + '@example.test' && usuario.papel === perfil,
@@ -165,7 +174,7 @@ async function montarHistorico(clinica, paciente, profissional, exemplo) {
 export async function loadClinic() {
   const saved = await AsyncStorage.getItem(STORAGE_KEY);
   const clinica = new Clinica(saved ? JSON.parse(saved) : undefined);
-  if (clinica.d.demonstracaoVersao === 3) return clinica;
+  if (clinica.d.demonstracaoVersao === 4) return clinica;
 
   const profissionais = {
     rafaela: await obterConta(clinica, 'rafaela', 'FICTÍCIO-01'),
@@ -193,7 +202,7 @@ export async function loadClinic() {
     }
   }
   clinica.usuario = null;
-  clinica.d.demonstracaoVersao = 3;
+  clinica.d.demonstracaoVersao = 4;
   await clinica.salvar();
   return clinica;
 }
