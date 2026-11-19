@@ -68,7 +68,7 @@ export function Heading({ kicker, title, description }) {
       <Text accessibilityRole="header" style={styles.h1}>
         {title}
       </Text>
-      {description && <Body>{description}</Body>}
+      {description && <Text style={styles.headingDescription}>{description}</Text>}
     </View>
   );
 }
@@ -143,7 +143,7 @@ export function Tabs({ items, page, onSelect }) {
             accessibilityLabel={label}
             accessibilityState={{ selected: page === name }}
             onPress={() => onSelect(name)}
-            style={styles.tab}
+            style={[styles.tab, page === name && styles.selectedTab]}
           >
             <Text style={[styles.tabIcon, page === name && styles.tabActive]}>{icon}</Text>
             <Text style={[styles.tabText, page === name && styles.tabActive]}>{label}</Text>
@@ -192,14 +192,15 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  heading: { gap: 6, marginVertical: 4 },
-  kicker: { fontSize: 11, letterSpacing: 2, fontWeight: '800', color: color.green },
+  heading: { gap: 8, backgroundColor: '#103d3a', padding: 24, borderRadius: 24 },
+  headingDescription: { fontSize: 15, lineHeight: 22, color: '#d3e6df' },
+  kicker: { fontSize: 11, letterSpacing: 2, fontWeight: '800', color: '#b8e6ae' },
   h1: {
     fontSize: 35,
     lineHeight: 38,
     letterSpacing: -1.65,
     fontWeight: '800',
-    color: color.ink,
+    color: color.white,
   },
   h2: { fontSize: 18, letterSpacing: -0.45, fontWeight: '800', color: color.ink },
   banner: {
@@ -225,8 +226,8 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: color.line,
-    padding: 15,
-    gap: 10,
+    padding: 19,
+    gap: 13,
   },
   tint: { backgroundColor: color.pale },
   body: { color: color.body, fontSize: 14, lineHeight: 20 },
@@ -262,7 +263,7 @@ export const styles = StyleSheet.create({
   compact: { minHeight: 36, paddingHorizontal: 10 },
   primary: { backgroundColor: color.green, borderColor: color.green },
   secondary: { backgroundColor: color.white, borderColor: '#cdded2' },
-  buttonLabel: { fontSize: 14, fontWeight: '750', textAlign: 'center' },
+  buttonLabel: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   chip: {
     borderRadius: 20,
     borderWidth: 1,
@@ -285,7 +286,7 @@ export const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     color: color.dark,
-    fontWeight: '650',
+    fontWeight: '600',
   },
   error: { backgroundColor: '#f9eae7', color: '#85362d' },
   tile: {
@@ -306,8 +307,9 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 9,
   },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 5, gap: 2 },
+  selectedTab: { backgroundColor: color.pale, borderRadius: 14 },
   tabIcon: { fontSize: 20, color: '#566f62' },
-  tabText: { fontSize: 11, color: '#52685b', fontWeight: '650' },
+  tabText: { fontSize: 11, color: '#52685b', fontWeight: '600' },
   tabActive: { color: color.green, fontWeight: '900' },
   chart: { flexDirection: 'row', gap: 9, height: 86, alignItems: 'flex-end' },
   barColumn: { flex: 1, alignItems: 'center', gap: 5 },

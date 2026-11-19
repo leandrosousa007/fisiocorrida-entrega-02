@@ -38,6 +38,7 @@ class Clinica {
   }
 
   salvar() {
+    if (this.preparandoDemonstracao) return Promise.resolve();
     return AsyncStorage.setItem('fc2.v1', JSON.stringify(this.d));
   }
 

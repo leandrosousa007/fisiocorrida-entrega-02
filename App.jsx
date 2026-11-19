@@ -82,11 +82,13 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const scroll = useRef(null),
     lock = useRef(false);
-  useEffect(() => {
+  function abrirClinica() {
+    setMessage(null);
     loadClinic()
       .then(setClinic)
       .catch((error) => setMessage({ text: error.message, error: true }));
-  }, []);
+  }
+  useEffect(abrirClinica, []);
 
   const user = clinic?.usuario;
   const isProfessional = user?.papel === PROFESSIONAL;
@@ -185,9 +187,7 @@ export default function App() {
               : 'Seu plano, suas sessões e seus relatos em um só lugar, com acompanhamento profissional.'
           }
         />
-        {!registering && (
-          <Banner value="Plano e sessões" label="Acompanhamento entre consultas" side="⌁" />
-        )}
+        <Card title={registering ? 'Dados da conta' : 'Acesse sua conta'}>
         {registering && (
           <>
             {choices(
@@ -254,6 +254,7 @@ export default function App() {
           title={registering ? 'Voltar ao login' : 'Criar conta'}
           onPress={() => go(registering ? 'Acesso' : 'Cadastro')}
         />
+        </Card>
         {!registering && (
           <Card title="Contas de demonstração">
             <Body>Escolha um perfil para preencher os campos e depois toque em Entrar.</Body>
@@ -721,7 +722,13 @@ export default function App() {
         )}
         {busy && <ActivityIndicator color={color.green} />}
         {!clinic ? (
-          <ActivityIndicator color={color.green} />
+          message?.error ? (
+            <Button title="Tentar novamente" onPress={abrirClinica} />
+          ) : (
+            <Card title="Preparando seu acompanhamento">
+              <ActivityIndicator color={color.green} />
+            </Card>
+          )
         ) : (
           <View pointerEvents={busy ? 'none' : 'auto'} style={{ gap: 14 }}>
             {user ? (

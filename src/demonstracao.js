@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Clinica, ItemPlano, gerarCredenciais } from './modelo';
+import { Fisioterapeuta, Paciente } from './entidades';
 import { PATIENT, PROFESSIONAL } from './perfis';
 
 const STORAGE_KEY = 'fc2.v1';
@@ -11,6 +12,15 @@ export const CONTAS_DEMO = [
   { login: 'marina.demo', nome: 'Marina', perfil: PATIENT, email: 'marina@gmail.com' },
   { login: 'bruno', nome: 'Bruno', perfil: PROFESSIONAL, email: 'bruno@gmail.com' },
 ];
+
+// Credenciais pré-calculadas apenas para os cinco perfis públicos de demonstração.
+const credenciaisDemo = {
+  'rafaela': { sal: 'd8bd0fbb-5e56-42f6-803d-22f4ed5f7235', hash: '92.245.34.223.60.250.148.164.131.101.224.131.100.56.26.248.215.86.116.15.61.213.138.21.27.187.16.30.101.24.236.70' },
+  'bruno': { sal: 'ad33fa35-4b94-41d4-a8f4-9c2c2eb274ea', hash: '42.79.254.229.20.139.157.51.30.183.114.36.155.48.160.53.41.254.67.157.50.1.59.145.49.237.244.247.74.76.80.252' },
+  'lucas': { sal: 'b1149449-f104-40ef-b4c9-a40436e7f7d9', hash: '129.183.142.199.209.47.200.220.169.6.186.247.123.0.217.210.101.65.132.18.87.71.80.172.217.159.108.10.64.72.59.39' },
+  'ana': { sal: 'c3cdfcc1-42f9-4d79-a15a-33f00064eb13', hash: '20.37.176.185.24.64.129.104.117.223.56.230.167.58.148.225.116.251.179.164.167.198.28.42.91.101.132.82.50.96.71.64' },
+  'marina.demo': { sal: '319f22b1-7283-4370-bb2a-d9074ea877d0', hash: '101.196.206.186.100.250.2.160.203.181.219.224.117.155.253.105.20.237.189.54.78.90.213.187.176.239.33.179.205.47.147.40' },
+};
 
 const catalogo = {
   rafaela: [
@@ -118,9 +128,12 @@ async function obterConta(clinica, login, vinculo) {
     return antigo;
   }
 
-  const nova = await clinica.cadastrar(nome, email, SENHA_DEMO, perfil, vinculo);
+  const { hash, sal } = credenciaisDemo[login];
+  const Tipo = perfil === PATIENT ? Paciente : Fisioterapeuta;
+  const nova = new Tipo(nome, email, perfil, hash, sal);
+  nova[perfil === PATIENT ? 'profissional' : 'registro'] = vinculo;
   nova.demo = login;
-  await clinica.salvar();
+  clinica.d.usuarios.push(nova);
   return nova;
 }
 
@@ -146,7 +159,7 @@ async function montarHistorico(clinica, paciente, profissional, exemplo) {
     exemplo.modalidade,
     'Relato fictício para demonstração.',
   );
-  clinica.d.relatos.at(-1).data = haDias(exemplo.sessoes[0][0] + 3);
+  clinica.d.relatos[clinica.d.relatos.length - 1].data = haDias(exemplo.sessoes[0][0] + 3);
 
   for (const [index, [dias, antes, depois, concluidos]] of exemplo.sessoes.entries()) {
     if (exemplo.revisar && index === 2) {
@@ -176,6 +189,7 @@ export async function loadClinic() {
   const clinica = new Clinica(saved ? JSON.parse(saved) : undefined);
   if (clinica.d.demonstracaoVersao === 4) return clinica;
 
+  clinica.preparandoDemonstracao = true;
   const profissionais = {
     rafaela: await obterConta(clinica, 'rafaela', 'FICTÍCIO-01'),
     bruno: await obterConta(clinica, 'bruno', 'FICTÍCIO-02'),
@@ -203,6 +217,7 @@ export async function loadClinic() {
   }
   clinica.usuario = null;
   clinica.d.demonstracaoVersao = 4;
+  clinica.preparandoDemonstracao = false;
   await clinica.salvar();
   return clinica;
 }

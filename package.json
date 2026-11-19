@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "expo export --platform android",
-    "start": "expo start",
+    "start": "expo start --go",
     "android": "expo start --android",
     "web": "expo start --web",
     "build:web": "expo export --platform web"
