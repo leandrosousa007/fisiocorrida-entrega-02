@@ -37,6 +37,16 @@ export function SessionList({ rows, exercise }) {
             {session.realizados.length > 0 && (
               <Body>{session.realizados.map((id) => exercise(id).nome).join(', ')}</Body>
             )}
+            {session.itens
+              .filter((item) => item.observacao)
+              .map((item) => (
+                <View key={item.exercicio}>
+                  <Text style={styles.label}>{exercise(item.exercicio).nome}</Text>
+                  <Body>
+                    {item.concluido ? 'Concluído' : 'Não concluído'} · {item.observacao}
+                  </Body>
+                </View>
+              ))}
             {session.comentario && <Body>{session.comentario}</Body>}
           </View>
         ))

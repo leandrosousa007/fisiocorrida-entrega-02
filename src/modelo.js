@@ -2,7 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { randomUUID } from 'expo-crypto';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { sha256 } from '@noble/hashes/sha256';
-import { Exercicio, Fisioterapeuta, Paciente, Plano, Relato, Sessao, hoje } from './entidades';
+import {
+  Exercicio,
+  Fisioterapeuta,
+  Paciente,
+  Plano,
+  Realiza,
+  Relato,
+  Sessao,
+  hoje,
+} from './entidades';
 
 function exigir(t, m) {
   if (!t) throw Error(m);
@@ -73,11 +82,12 @@ class Clinica {
     exigir(
       escala(dor) &&
         impacto.trim() &&
-        objetivo.trim() &&
+        (p.objetivo || objetivo.trim()) &&
         ['Esquerdo', 'Direito', 'Ambos'].includes(lado),
       'Preencha o relato e informe dor entre 0 e 10.',
     );
-    Object.assign(p, { objetivo, modalidade });
+    if (!p.objetivo) p.objetivo = objetivo.trim();
+    p.modalidade = modalidade;
     this.d.relatos.push(new Relato(p.id, lado, dor, impacto, obs));
     await this.salvar();
   }
@@ -93,10 +103,7 @@ class Clinica {
 
   planosDoPaciente(id) {
     this.acesso(id);
-    return this.d.planos
-      .filter((p) => p.paciente === id)
-      .slice()
-      .reverse();
+    return this.d.planos.filter((p) => p.paciente === id).sort((a, b) => b.versao - a.versao);
   }
 
   versoes(id) {
@@ -135,7 +142,7 @@ class Clinica {
     await this.salvar();
   }
 
-  async registrarSessao(data, antes, depois, realizados, comentario) {
+  async registrarSessao(data, antes, depois, realizados, comentario, observacoes = {}) {
     const p = this.vigente(this.usuario.id);
     exigir(
       p &&
@@ -147,15 +154,22 @@ class Clinica {
         escala(depois),
       'Confira a data e os valores de dor.',
     );
+    const exercicios = new Set(p.itens.map((item) => item.exercicio));
+    const concluidos = new Set(realizados);
     exigir(
-      realizados.every((id) => p.itens.some((i) => i.exercicio === id)),
-      'Item fora do plano.',
+      concluidos.size === realizados.length &&
+        [...realizados, ...Object.keys(observacoes)].every((id) => exercicios.has(id)),
+      'Cada exercício pode aparecer uma vez e precisa pertencer ao plano.',
     );
     exigir(
       !this.d.sessoes.some((s) => s.plano === p.id && s.data === data),
       'Já existe uma sessão desse plano nessa data. Confira o registro na aba Histórico.',
     );
-    this.d.sessoes.push(new Sessao(p.id, data, antes, depois, realizados, comentario));
+    // Um registro por item da versão executada, inclusive para itens não concluídos.
+    const itens = [...exercicios].map(
+      (id) => new Realiza(id, concluidos.has(id), observacoes[id]?.trim() || ''),
+    );
+    this.d.sessoes.push(new Sessao(p.id, data, antes, depois, itens, comentario));
     await this.salvar();
     return depois > antes
       ? 'Sessão salva. A dor aumentou. Converse com seu fisioterapeuta.'
@@ -172,7 +186,14 @@ class Clinica {
   evolucao(id) {
     return this.historico(id).map((s) => {
       const p = this.d.planos.find((p) => p.id === s.plano);
-      return { ...s, versao: p.versao, total: p.itens.length };
+      const concluidosAnteriores = new Set(s.realizados ?? []);
+      const itens =
+        s.itens ??
+        p.itens.map(
+          (item) => new Realiza(item.exercicio, concluidosAnteriores.has(item.exercicio)),
+        );
+      const realizados = itens.filter((item) => item.concluido).map((item) => item.exercicio);
+      return { ...s, itens, realizados, versao: p.versao, total: p.itens.length };
     });
   }
 }

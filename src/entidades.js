@@ -9,7 +9,6 @@ function localDate() {
   ].join('-');
 }
 
-
 export class Usuario {
   constructor(nome, email, papel, hash, sal) {
     Object.assign(this, { id: randomUUID(), nome, email, papel, hash, sal });
@@ -47,8 +46,15 @@ export class Plano {
   }
 }
 export class Sessao {
-  constructor(plano, data, antes, depois, realizados, comentario) {
-    Object.assign(this, { plano, data, antes, depois, realizados, comentario });
+  constructor(plano, data, antes, depois, itens, comentario) {
+    Object.assign(this, { plano, data, antes, depois, itens, comentario });
   }
 }
+
+export class Realiza {
+  constructor(exercicio, concluido, observacao = '') {
+    Object.assign(this, { exercicio, concluido, observacao });
+  }
+}
+
 export const hoje = () => localDate();

@@ -385,9 +385,15 @@ export default function App() {
           {input('impacto', 'Impacto na corrida', {
             placeholder: 'Exemplo: precisei reduzir o ritmo',
           })}
-          {input('objetivo', 'Seu objetivo', {
-            placeholder: 'Exemplo: voltar a correr com conforto',
-          })}
+          {selectedPatient.objetivo ? (
+            <Card title="Objetivo do primeiro relato">
+              <Body>{selectedPatient.objetivo}</Body>
+            </Card>
+          ) : (
+            input('objetivo', 'Seu objetivo', {
+              placeholder: 'Exemplo: voltar a correr com conforto',
+            })
+          )}
           {input('modalidade', 'Modalidade de corrida', {
             placeholder: 'Rua, trilha ou pista',
           })}
@@ -616,12 +622,20 @@ export default function App() {
         {input('data', 'Data (AAAA-MM-DD)')}
         <Card title="Itens realizados">
           {plan.itens.map((item) => (
-            <Choice
-              key={item.exercicio}
-              title={exercise(item.exercicio).nome}
-              selected={!!values[item.exercicio]}
-              onPress={() => set(item.exercicio, !values[item.exercicio])}
-            />
+            <View style={styles.tile} key={item.exercicio}>
+              <Choice
+                title={exercise(item.exercicio).nome}
+                selected={!!values[item.exercicio]}
+                onPress={() => set(item.exercicio, !values[item.exercicio])}
+              />
+              {input(
+                'obs-' + item.exercicio,
+                'Observação de ' + exercise(item.exercicio).nome,
+                {
+                  placeholder: 'Opcional',
+                },
+              )}
+            </View>
           ))}
         </Card>
         {pain('antes', 'Dor antes da sessão')}
@@ -631,6 +645,9 @@ export default function App() {
           const done = plan.itens
             .filter((item) => values[item.exercicio])
             .map((item) => item.exercicio);
+          const observations = Object.fromEntries(
+            plan.itens.map((item) => [item.exercicio, val('obs-' + item.exercicio)]),
+          );
           const before = Number(val('antes')),
             after = Number(val('depois'));
           const result = await clinic.registrarSessao(
@@ -639,6 +656,7 @@ export default function App() {
             after,
             done,
             val('obs'),
+            observations,
           );
           go('Histórico');
           ok(
