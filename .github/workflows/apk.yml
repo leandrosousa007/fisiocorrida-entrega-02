@@ -1,6 +1,8 @@
 name: Gerar APK de demonstração
 on:
   push:
+    branches: [main]
+    paths: ['.github/workflows/apk.yml']
     tags: ['demo-apk-*']
   workflow_dispatch:
 permissions:
